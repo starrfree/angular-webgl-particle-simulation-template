@@ -1,6 +1,8 @@
 # version 300 es
 precision highp float;
 
+uniform float width;
+uniform float height;
 uniform sampler2D positionSampler;
 uniform sampler2D velocitySampler;
 

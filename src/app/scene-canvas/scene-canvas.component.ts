@@ -46,8 +46,8 @@ export class SceneCanvasComponent implements OnInit {
       compute: {
         program: computeShaderProgram,
         uniformLocations: {
-          width: gl.getUniformLocation(computeShaderProgram, 'u_Width'),
-          height: gl.getUniformLocation(computeShaderProgram, 'u_Height'),
+          width: gl.getUniformLocation(computeShaderProgram, 'width'),
+          height: gl.getUniformLocation(computeShaderProgram, 'height'),
           positionTexture: gl.getUniformLocation(computeShaderProgram, 'positionSampler'),
           velocityTexture: gl.getUniformLocation(computeShaderProgram, 'velocitySampler'),
         },
@@ -58,8 +58,6 @@ export class SceneCanvasComponent implements OnInit {
       draw: {
         program: drawShaderProgram,
         uniformLocations: {
-          width: gl.getUniformLocation(drawShaderProgram, 'u_Width'),
-          height: gl.getUniformLocation(drawShaderProgram, 'u_Height'),
           positionTexture: gl.getUniformLocation(drawShaderProgram, 'positionSampler'),
           velocityTexture: gl.getUniformLocation(drawShaderProgram, 'velocitySampler'),
         },
@@ -147,24 +145,25 @@ export class SceneCanvasComponent implements OnInit {
   }
 
   frame(gl: WebGL2RenderingContext, programInfo: any) {
+    this.compute(gl, programInfo)
+    this.swapTextures()
+    this.clear(gl)
+    this.draw(gl, programInfo)
+  }
+
+  clear(gl: WebGL2RenderingContext) {
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
     gl.clearDepth(1.0)
     gl.enable(gl.DEPTH_TEST)
     gl.depthFunc(gl.LEQUAL)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-    this.compute(gl, programInfo)
-    this.swapTextures()
-    this.draw(gl, programInfo)
   }
 
   draw(gl: WebGL2RenderingContext, programInfo: any) {
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
     gl.useProgram(programInfo.draw.program)
-    gl.uniform1f(programInfo.draw.uniformLocations.width, gl.canvas.width)
-    gl.uniform1f(programInfo.draw.uniformLocations.height, gl.canvas.height)
     
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);//.in
@@ -197,8 +196,8 @@ export class SceneCanvasComponent implements OnInit {
     gl.viewport(0, 0, this.particleTextureSize[0], this.particleTextureSize[1]);
 
     gl.useProgram(programInfo.compute.program)
-    gl.uniform1f(programInfo.compute.uniformLocations.width, gl.canvas.width)
-    gl.uniform1f(programInfo.compute.uniformLocations.height, gl.canvas.height)
+    gl.uniform1f(programInfo.compute.uniformLocations.width, this.particleTextureSize[0])
+    gl.uniform1f(programInfo.compute.uniformLocations.height, this.particleTextureSize[1])
     
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);

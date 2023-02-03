@@ -1,8 +1,6 @@
 # version 300 es
 precision highp float;
 
-uniform float u_Width;
-uniform float u_Height;
 uniform sampler2D positionSampler;
 
 in vec2 newPosition;
