@@ -40,21 +40,31 @@ export class SceneCanvasComponent implements OnInit {
     }
     this.buffers = this.initBuffers(gl)
     this.textures = this.initTextures(gl)
-    const shaderProgram = this.shaderService.initShaderProgram(gl, this.shaderService.drawVertexSource, this.shaderService.drawFragmentSource)
+    const computeShaderProgram = this.shaderService.initShaderProgram(gl, this.shaderService.computeVertexSource, this.shaderService.computeFragmentSource)
+    const drawShaderProgram = this.shaderService.initShaderProgram(gl, this.shaderService.drawVertexSource, this.shaderService.drawFragmentSource)
     const programInfo = {
-      update: {
-
-      },
-      draw: {
-        program: shaderProgram,
+      compute: {
+        program: computeShaderProgram,
         uniformLocations: {
-          width: gl.getUniformLocation(shaderProgram, 'u_Width'),
-          height: gl.getUniformLocation(shaderProgram, 'u_Height'),
-          positionTexture: gl.getUniformLocation(shaderProgram, 'positionSampler'),
-          velocityTexture: gl.getUniformLocation(shaderProgram, 'velocitySampler'),
+          width: gl.getUniformLocation(computeShaderProgram, 'u_Width'),
+          height: gl.getUniformLocation(computeShaderProgram, 'u_Height'),
+          positionTexture: gl.getUniformLocation(computeShaderProgram, 'positionSampler'),
+          velocityTexture: gl.getUniformLocation(computeShaderProgram, 'velocitySampler'),
         },
         attribLocations: {
-          vertexPosition: gl.getAttribLocation(shaderProgram, 'i_VertexPosition')
+          vertexPosition: gl.getAttribLocation(computeShaderProgram, 'i_VertexPosition')
+        }
+      },
+      draw: {
+        program: drawShaderProgram,
+        uniformLocations: {
+          width: gl.getUniformLocation(drawShaderProgram, 'u_Width'),
+          height: gl.getUniformLocation(drawShaderProgram, 'u_Height'),
+          positionTexture: gl.getUniformLocation(drawShaderProgram, 'positionSampler'),
+          velocityTexture: gl.getUniformLocation(drawShaderProgram, 'velocitySampler'),
+        },
+        attribLocations: {
+          vertexPosition: gl.getAttribLocation(drawShaderProgram, 'i_VertexPosition')
         }
       },
     }
@@ -62,12 +72,12 @@ export class SceneCanvasComponent implements OnInit {
       this.canvas.nativeElement.width = this.canvas.nativeElement.clientWidth
       this.canvas.nativeElement.height = this.canvas.nativeElement.clientHeight
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-      this.drawScene(gl, programInfo)
+      this.frame(gl, programInfo)
     }
     resizeCanvas()
     var render = () => {
-      this.drawScene(gl, programInfo)
-      // requestAnimationFrame(render)
+      this.frame(gl, programInfo)
+      requestAnimationFrame(render)
     }
     render()
   }
@@ -125,28 +135,43 @@ export class SceneCanvasComponent implements OnInit {
     var positionTexture = this.shaderService.textureFromPixelArray(gl, positions, gl.RG, this.particleTextureSize[0], this.particleTextureSize[1])
     var velocityTexture = this.shaderService.textureFromPixelArray(gl, velocities, gl.RG, this.particleTextureSize[0], this.particleTextureSize[1])
     return {
-      position: positionTexture,
-      velocity: velocityTexture
+      in: {
+        position: positionTexture,
+        velocity: velocityTexture
+      },
+      out: {
+        position: this.shaderService.textureEmpty(gl, gl.RG, this.particleTextureSize[0], this.particleTextureSize[1]),
+        velocity: this.shaderService.textureEmpty(gl, gl.RG, this.particleTextureSize[0], this.particleTextureSize[1])
+      }
     }
   }
 
-  drawScene(gl: WebGL2RenderingContext, programInfo: any) {
+  frame(gl: WebGL2RenderingContext, programInfo: any) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
     gl.clearDepth(1.0)
     gl.enable(gl.DEPTH_TEST)
     gl.depthFunc(gl.LEQUAL)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+    this.compute(gl, programInfo)
+    this.swapTextures()
+    this.draw(gl, programInfo)
+  }
+
+  draw(gl: WebGL2RenderingContext, programInfo: any) {
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
     gl.useProgram(programInfo.draw.program)
     gl.uniform1f(programInfo.draw.uniformLocations.width, gl.canvas.width)
     gl.uniform1f(programInfo.draw.uniformLocations.height, gl.canvas.height)
     
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.textures.position);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);//.in
     gl.uniform1i(programInfo.draw.uniformLocations.positionTexture, 0);
 
     gl.activeTexture(gl.TEXTURE0 + 1);
-    gl.bindTexture(gl.TEXTURE_2D, this.textures.velocity);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.velocity);//.in
     gl.uniform1i(programInfo.draw.uniformLocations.velocityTexture, 1);
     
     {
@@ -167,23 +192,54 @@ export class SceneCanvasComponent implements OnInit {
     }
     gl.drawArrays(gl.POINTS, 0, this.particleCount)
   }
-}
 
-// TEST FRAG
-// {
-//   const numComponents = 2
-//   const type = gl.FLOAT
-//   const normalize = false
-//   const stride = 0
-//   const offset = 0
-//   gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.corners)
-//   gl.vertexAttribPointer(
-//     programInfo.draw.attribLocations.vertexPosition,
-//     numComponents,
-//     type,
-//     normalize,
-//     stride,
-//     offset)
-//   gl.enableVertexAttribArray(programInfo.draw.attribLocations.vertexPosition)
-// }
-// gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+  compute(gl: WebGL2RenderingContext, programInfo: any) {
+    gl.viewport(0, 0, this.particleTextureSize[0], this.particleTextureSize[1]);
+
+    gl.useProgram(programInfo.compute.program)
+    gl.uniform1f(programInfo.compute.uniformLocations.width, gl.canvas.width)
+    gl.uniform1f(programInfo.compute.uniformLocations.height, gl.canvas.height)
+    
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);
+    gl.uniform1i(programInfo.compute.uniformLocations.positionTexture, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.velocity);
+    gl.uniform1i(programInfo.compute.uniformLocations.velocityTexture, 1);
+    
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.textures.out.position, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, this.textures.out.velocity, 0);
+
+    gl.drawBuffers([
+      gl.COLOR_ATTACHMENT0,
+      gl.COLOR_ATTACHMENT1
+    ]);
+
+    {
+      const numComponents = 2
+      const type = gl.FLOAT
+      const normalize = false
+      const stride = 0
+      const offset = 0
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.particles)
+      gl.vertexAttribPointer(
+        programInfo.draw.attribLocations.vertexPosition,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset)
+      gl.enableVertexAttribArray(programInfo.compute.attribLocations.vertexPosition)
+    }
+    gl.drawArrays(gl.POINTS, 0, this.particleCount)
+  }
+
+  swapTextures() {
+    var temp = { ...this.textures.in }
+    this.textures.in = { ...this.textures.out }
+    this.textures.out = temp
+  }
+}

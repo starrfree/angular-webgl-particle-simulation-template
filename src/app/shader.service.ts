@@ -8,6 +8,8 @@ import { firstValueFrom } from 'rxjs';
 export class ShaderService {
   drawVertexSource = ""
   drawFragmentSource = ""
+  computeVertexSource = ""
+  computeFragmentSource = ""
   gl!: WebGL2RenderingContext
   didInit = false
 
@@ -17,6 +19,8 @@ export class ShaderService {
   public async getShaders() {
     this.drawVertexSource = await firstValueFrom(this.http.get("shaders/draw-vertex.glsl", {responseType: 'text'}))
     this.drawFragmentSource = await firstValueFrom(this.http.get("shaders/draw-fragment.glsl", {responseType: 'text'}))
+    this.computeVertexSource = await firstValueFrom(this.http.get("shaders/compute-vertex.glsl", {responseType: 'text'}))
+    this.computeFragmentSource = await firstValueFrom(this.http.get("shaders/compute-fragment.glsl", {responseType: 'text'}))
     this.didInit = true
   }
 
@@ -65,6 +69,17 @@ export class ShaderService {
     var texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, width, height, 0, type, gl.FLOAT, dataTypedArray);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    return texture;
+  }
+
+  public textureEmpty(gl: WebGL2RenderingContext, type: any, width: number, height: number) {
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, width, height, 0, type, gl.FLOAT, null);
     // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
