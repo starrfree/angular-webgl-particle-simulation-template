@@ -6,8 +6,8 @@ import { firstValueFrom } from 'rxjs';
   providedIn: 'root'
 })
 export class ShaderService {
-  vertexSource = ""
-  fragmentSource = ""
+  drawVertexSource = ""
+  drawFragmentSource = ""
   gl!: WebGL2RenderingContext
   didInit = false
 
@@ -15,8 +15,8 @@ export class ShaderService {
   }
 
   public async getShaders() {
-    this.vertexSource = await firstValueFrom(this.http.get("shaders/vertex.glsl", {responseType: 'text'}))
-    this.fragmentSource = await firstValueFrom(this.http.get("shaders/fragment.glsl", {responseType: 'text'}))
+    this.drawVertexSource = await firstValueFrom(this.http.get("shaders/draw-vertex.glsl", {responseType: 'text'}))
+    this.drawFragmentSource = await firstValueFrom(this.http.get("shaders/draw-fragment.glsl", {responseType: 'text'}))
     this.didInit = true
   }
 

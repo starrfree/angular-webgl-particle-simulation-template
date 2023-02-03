@@ -40,7 +40,7 @@ export class SceneCanvasComponent implements OnInit {
     }
     this.buffers = this.initBuffers(gl)
     this.textures = this.initTextures(gl)
-    const shaderProgram = this.shaderService.initShaderProgram(gl, this.shaderService.vertexSource, this.shaderService.fragmentSource)
+    const shaderProgram = this.shaderService.initShaderProgram(gl, this.shaderService.drawVertexSource, this.shaderService.drawFragmentSource)
     const programInfo = {
       update: {
 
