@@ -13,7 +13,7 @@ in vec4 i_VertexPosition;
 out vec2 newPosition;
 out vec2 newVelocity;
 
-float dt = 0.01;
+float dt = 0.001;
 float drag = 1.0;
 float bounceDamp = 0.9;
 uint hash(uint ste);
@@ -30,10 +30,10 @@ void main() {
       float x = i / width;
       float y = j / height;
       vec2 otherPosition = texture(positionSampler, vec2(x, y)).xy;
-      float r = distance(position, otherPosition) + 0.01;
+      float r = distance(position, otherPosition) + 0.005;
       if (r > 0.0) {
         vec2 dir = (position - otherPosition) / r;
-        force += -0.005 * dir / (r * r);
+        force += -0.1 * dir / (r * r);
       }
     }
   }

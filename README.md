@@ -1,2 +1,2 @@
-# Angular + WebGL template 
-This is a quick start WebGL project template for Angular.
+# Angular + WebGL particle simulaition template 
+This is a quick start WebGL particle simulation project template for Angular.
