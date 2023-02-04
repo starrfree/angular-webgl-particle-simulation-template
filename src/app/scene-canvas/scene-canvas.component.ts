@@ -11,7 +11,12 @@ export class SceneCanvasComponent implements OnInit {
   didInit: boolean = false
   buffers: any
   textures: any
-  particleTextureSize: [number, number] = [40, 30]
+
+  particleTextureSize: [number, number] = [3000, 1]
+  iterations: number = 1
+  xRange: number = 10
+  yRange: number = 10
+
   get particleCount() {
     return this.particleTextureSize[0] * this.particleTextureSize[1]
   }
@@ -48,6 +53,8 @@ export class SceneCanvasComponent implements OnInit {
         uniformLocations: {
           width: gl.getUniformLocation(computeShaderProgram, 'width'),
           height: gl.getUniformLocation(computeShaderProgram, 'height'),
+          xRange: gl.getUniformLocation(computeShaderProgram, 'xRange'),
+          yRange: gl.getUniformLocation(computeShaderProgram, 'yRange'),
           positionTexture: gl.getUniformLocation(computeShaderProgram, 'positionSampler'),
           velocityTexture: gl.getUniformLocation(computeShaderProgram, 'velocitySampler'),
         },
@@ -58,6 +65,8 @@ export class SceneCanvasComponent implements OnInit {
       draw: {
         program: drawShaderProgram,
         uniformLocations: {
+          xRange: gl.getUniformLocation(drawShaderProgram, 'xRange'),
+          yRange: gl.getUniformLocation(drawShaderProgram, 'yRange'),
           positionTexture: gl.getUniformLocation(drawShaderProgram, 'positionSampler'),
           velocityTexture: gl.getUniformLocation(drawShaderProgram, 'velocitySampler'),
         },
@@ -120,8 +129,10 @@ export class SceneCanvasComponent implements OnInit {
     var dy = 1.0 / this.particleTextureSize[1]
     for(var i = 0; i < this.particleTextureSize[0]; i++) {
       for(var j = 0; j < this.particleTextureSize[1]; j++) {
-        const x = i * dx * 2 - 1 + dx
-        const y = j * dy * 2 - 1 + dy
+        // const x = i * dx * 2 - 1 + dx
+        // const y = j * dy * 2 - 1 + dy
+        const x = (Math.random() * 2 - 1) * this.xRange
+        const y = (Math.random() * 2 - 1) * this.yRange
         positions.push(x)
         positions.push(y)
         var angle: number = Math.random() * 2 * Math.PI
@@ -145,8 +156,10 @@ export class SceneCanvasComponent implements OnInit {
   }
 
   frame(gl: WebGL2RenderingContext, programInfo: any) {
-    this.compute(gl, programInfo)
-    this.swapTextures()
+    for(var i = 0; i < this.iterations; i++) {
+      this.compute(gl, programInfo)
+      this.swapTextures()
+    }
     this.clear(gl)
     this.draw(gl, programInfo)
   }
@@ -164,6 +177,8 @@ export class SceneCanvasComponent implements OnInit {
 
   draw(gl: WebGL2RenderingContext, programInfo: any) {
     gl.useProgram(programInfo.draw.program)
+    gl.uniform1f(programInfo.draw.uniformLocations.xRange, this.xRange)
+    gl.uniform1f(programInfo.draw.uniformLocations.yRange, this.yRange)
     
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);//.in
@@ -198,6 +213,8 @@ export class SceneCanvasComponent implements OnInit {
     gl.useProgram(programInfo.compute.program)
     gl.uniform1f(programInfo.compute.uniformLocations.width, this.particleTextureSize[0])
     gl.uniform1f(programInfo.compute.uniformLocations.height, this.particleTextureSize[1])
+    gl.uniform1f(programInfo.compute.uniformLocations.xRange, this.xRange)
+    gl.uniform1f(programInfo.compute.uniformLocations.yRange, this.yRange)
     
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);
