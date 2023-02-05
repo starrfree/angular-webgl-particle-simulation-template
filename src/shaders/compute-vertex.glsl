@@ -27,8 +27,8 @@ void main() {
   vec2 force = vec2(0.0);
   for(float i = 0.0; i < width; i++) {
     for(float j = 0.0; j < height; j++) {
-      float x = i / (width - 1.0);
-      float y = j / (height - 1.0);
+      float x = (i + 0.1) / (width);
+      float y = (j + 0.1) / (height);
       vec2 otherPosition = texture(positionSampler, vec2(x, y)).xy;
       float r = distance(position, otherPosition) + 0.005;
       if (r > 0.0) {
