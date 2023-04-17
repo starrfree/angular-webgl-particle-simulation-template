@@ -20,6 +20,7 @@ uint hash(uint ste);
 float random(uint seed);
 
 void main() {
+  gl_PointSize = 1.0;
   gl_Position = i_VertexPosition * 2.0 - 1.0;
   vec2 position = texture(positionSampler, vec2(i_VertexPosition.x, i_VertexPosition.y)).xy;
   vec2 velocity = texture(velocitySampler, vec2(i_VertexPosition.x, i_VertexPosition.y)).xy;
@@ -38,7 +39,7 @@ void main() {
     }
   }
 
-  newVelocity = velocity + dt * force;
+  newVelocity = velocity + dt * force * 3.0;
   newVelocity *= drag;
   newPosition = position + dt * velocity;
 

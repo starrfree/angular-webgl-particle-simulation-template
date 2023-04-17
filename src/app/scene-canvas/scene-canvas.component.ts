@@ -37,8 +37,8 @@ export class SceneCanvasComponent implements OnInit {
   main() {
     const gl = this.canvas.nativeElement.getContext("webgl2")
     this.shaderService.gl = gl
-    gl.getExtension("EXT_color_buffer_float")
-    if (gl === null) {
+    let ext = gl.getExtension("EXT_color_buffer_float")
+    if (gl === null || ext === null) {
       console.error("Unable to initialize WebGL")
       alert("Unable to initialize WebGL. Your browser or machine may not support it.")
       return
@@ -129,8 +129,8 @@ export class SceneCanvasComponent implements OnInit {
     var dy = 1.0 / this.particleTextureSize[1]
     for(var i = 0; i < this.particleTextureSize[0]; i++) {
       for(var j = 0; j < this.particleTextureSize[1]; j++) {
-        // const x = i * dx * 2 - 1 + dx
-        // const y = j * dy * 2 - 1 + dy
+        // const x = (i * dx * 2 - 1 + dx) * xRange
+        // const y = (j * dy * 2 - 1 + dy) * yRange
         const x = (Math.random() * 2 - 1) * this.xRange
         const y = (Math.random() * 2 - 1) * this.yRange
         positions.push(x)
@@ -181,11 +181,11 @@ export class SceneCanvasComponent implements OnInit {
     gl.uniform1f(programInfo.draw.uniformLocations.yRange, this.yRange)
     
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);//.in
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.position);
     gl.uniform1i(programInfo.draw.uniformLocations.positionTexture, 0);
 
-    gl.activeTexture(gl.TEXTURE0 + 1);
-    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.velocity);//.in
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures.in.velocity);
     gl.uniform1i(programInfo.draw.uniformLocations.velocityTexture, 1);
     
     {
@@ -228,6 +228,10 @@ export class SceneCanvasComponent implements OnInit {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.textures.out.position, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, this.textures.out.velocity, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      console.log('Framebuffer not complete.');
+      return
+    }
 
     gl.drawBuffers([
       gl.COLOR_ATTACHMENT0,
